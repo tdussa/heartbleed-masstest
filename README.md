@@ -22,4 +22,4 @@ And multiple hostlists can be specified:
 
 Concise mode is now implemented.  Adding the right grep statement to the
 pipeline highlights found vulnerabilities:
-* echo www.google.com | ./ssltest.py --ports "443, 993, 995" --concise | egrep --color '[[:digit:]]+!'
+* echo www.google.com | ./ssltest.py --ports "443, 993, 995" --concise | egrep --color '[[:digit:]]+!|'
