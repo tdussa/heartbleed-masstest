@@ -6,15 +6,37 @@
 # Quickly and dirtily modified by Mustafa Al-Bassam (mus@musalbas.com) to test
 # the Alexa top X.
 
+# Made things prettier and added port list functionality
+
 import sys
 import struct
 import socket
 import time
 import select
 import re
-from optparse import OptionParser
+from argparse import ArgumentParser
 
-options = OptionParser(usage='%prog file max', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file and port list to be scanned')
+# Parse args
+parser = ArgumentParser()
+parser.add_argument("--concise", dest="concise", default=None,    action="store_true", help="make output concise")
+parser.add_argument("--ports",   dest="ports",   action="append", nargs=1,             help="list of ports to be scanned (default: 443)")
+parser.add_argument("hostlist",                  default=["-"],   nargs="*",           help="list(s) of hosts to be scanned (default: stdin)")
+args = parser.parse_args()
+tmplist = []
+if not args.ports:
+    args.ports = [["443"]]
+for port in args.ports:
+    tmplist.extend(port[0].replace(",", " ").replace(";", " ").split())
+portlist = [int(i) for i in tmplist];
+
+counter_nossl   = dict(((port, 0) for port in portlist))
+counter_notvuln = dict(((port, 0) for port in portlist))
+counter_vuln    = dict(((port, 0) for port in portlist))
+
+portlist = sorted(counter_nossl.keys())
+
+
+#options = OptionParser(usage='%prog file portlist', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file and port list to be scanned')
 
 def h2bin(x):
     return x.replace(' ', '').replace('\n', '').decode('hex')
@@ -85,6 +107,7 @@ def recvmsg(s):
     #print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
     return typ, ver, pay
 
+
 def hit_hb(s):
     s.send(hb)
     while True:
@@ -108,6 +131,7 @@ def hit_hb(s):
             hexdump(pay)
             #print 'Server returned error, likely not vulnerable'
             return False
+
 
 def is_vulnerable(domain, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -137,39 +161,41 @@ def is_vulnerable(domain, port):
     s.send(hb)
     return hit_hb(s)
 
+
+def scan_host(domain):
+    print "Testing " + domain + "... ",
+    for port in portlist:
+        sys.stdout.flush();
+        print "Port " + str(port) + ":",
+        result = is_vulnerable(domain, port);
+        if result is None:
+            print "no SSL;",
+            counter_nossl[port] += 1;
+        elif result:
+            print "VULNERABLE!",
+            counter_vuln[port] += 1;
+        else:
+            print "not vulnerable;",
+            counter_notvuln[port] += 1;
+    print ""
+
+
 def main():
-    opts, args = options.parse_args()
-    if len(args) < 1:
-        options.print_help()
-        return
-
-    counter_nossl = 0;
-    counter_notvuln = 0;
-    counter_vuln = 0;
-
-    f = open(args[0], 'r')
-    for line in f:
-        domain = line.strip()
-        print "Testing " + domain + "... ",
-        for port in args[1].replace(",", " ").replace(";", " ").split():
-            sys.stdout.flush();
-            print "Port " + port + ":",
-            result = is_vulnerable(domain, int(port));
-            if result is None:
-                print "no SSL;",
-                counter_nossl += 1;
-            elif result:
-                print "VULNERABLE!",
-                counter_vuln += 1;
-            else:
-                print "not vulnerable;",
-                counter_notvuln += 1;
-        print ""
+    for input in args.hostlist:
+        if input == "-":
+            for line in sys.stdin:
+                scan_host(line.strip())
+        else:
+            file = open(input, 'r')
+            for line in file:
+                scan_host(line.strip())
+            file.close()
 
     print
-    print "No SSL: " + str(counter_nossl)
-    print "Vulnerable: " + str(counter_vuln)
-    print "Not vulnerable: " + str(counter_notvuln)
+    print ". no SSL:         " + str(sum(counter_nossl.values()))
+    print "! VULNERABLE:     " + str(sum(counter_vuln.values()))
+    print "+ not vulnerable: " + str(sum(counter_notvuln.values()))
+
 
 if __name__ == '__main__':
     main()
