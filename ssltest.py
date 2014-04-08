@@ -14,7 +14,7 @@ import select
 import re
 from optparse import OptionParser
 
-options = OptionParser(usage='%prog file max', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file')
+options = OptionParser(usage='%prog file max', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file and port list to be scanned')
 
 def h2bin(x):
     return x.replace(' ', '').replace('\n', '').decode('hex')
@@ -109,13 +109,13 @@ def hit_hb(s):
             #print 'Server returned error, likely not vulnerable'
             return False
 
-def is_vulnerable(domain):
+def is_vulnerable(domain, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(2)
     #print 'Connecting...'
     #sys.stdout.flush()
     try:
-        s.connect((domain, 443))
+        s.connect((domain, port))
     except Exception, e:
         return None
     #print 'Sending Client Hello...'
@@ -149,23 +149,22 @@ def main():
 
     f = open(args[0], 'r')
     for line in f:
-        rank, domain = line.split(',')
-        domain = domain.strip()
+        domain = line.strip()
         print "Testing " + domain + "... ",
         sys.stdout.flush();
-        result = is_vulnerable(domain);
-        if result is None:
-            print "no SSL."
-            counter_nossl += 1;
-        elif result:
-            print "vulnerable."
-            counter_vuln += 1;
-        else:
-            print "not vulnerable."
-            counter_notvuln += 1;
-
-        if int(rank) >= int(args[1]):
-            break
+	for port in args[1].replace(",;", "  ").split():
+            print "Port " + port + ":",
+            result = is_vulnerable(domain, int(port));
+            if result is None:
+                print "no SSL;",
+                counter_nossl += 1;
+            elif result:
+                print "VULNERABLE!",
+                counter_vuln += 1;
+            else:
+                print "not vulnerable;",
+                counter_notvuln += 1;
+        print ""
 
     print
     print "No SSL: " + str(counter_nossl)
