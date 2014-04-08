@@ -6,3 +6,4 @@
 echo www.google.de | ./ssltest.py
 echo www.google.de | ./ssltest.py -
 ./ssltest.py hostlist1.txt hostlist2.txt
+echo www.google.com | ./ssltest.py --ports "443, 993, 995" --concise | egrep --color '[[:digit:]]+!'
