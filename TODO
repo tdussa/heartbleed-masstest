@@ -1,0 +1,9 @@
+TODO List
+=========
+
+* Add support for STARTTLS protocols
+** SMTP
+** LDAP
+** IMAP
+** POP3
+** ?
