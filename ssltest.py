@@ -151,8 +151,8 @@ def main():
     for line in f:
         domain = line.strip()
         print "Testing " + domain + "... ",
-        sys.stdout.flush();
-	for port in args[1].replace(",;", "  ").split():
+        for port in args[1].replace(",", " ").replace(";", " ").split():
+            sys.stdout.flush();
             print "Port " + port + ":",
             result = is_vulnerable(domain, int(port));
             if result is None:
