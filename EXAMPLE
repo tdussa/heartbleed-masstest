@@ -1,3 +1,8 @@
-./ssltest.py examplehosts.txt "443 8443 993 995"
-./ssltest.py examplehosts.txt "443,8443,993,995"
-./ssltest.py examplehosts.txt "443;8443;993;995"
+./ssltest.py examplehosts.txt --ports "443 8443 993 995"
+./ssltest.py examplehosts.txt --ports "443,8443,993,995"
+./ssltest.py examplehosts.txt --ports "443;8443;993;995"
+./ssltest.py --ports "443, 993, 995" hostlist.txt
+./ssltest.py --port 443 --port 993 --port 995 hostlist.txt
+echo www.google.de | ./ssltest.py
+echo www.google.de | ./ssltest.py -
+./ssltest.py hostlist1.txt hostlist2.txt
