@@ -205,7 +205,7 @@ def scan_address(domain, address, protocol, portlist):
         result = is_vulnerable(address, port, protocol);
         if result is None:
             if not args.concise:
-                print "port " + str(port) + ": no SSL;",
+                print "port " + str(port) + ": no SSL/unreachable;",
             else:
                 print str(port) + "-",
             counter_nossl[port] += 1;
@@ -261,9 +261,9 @@ def main():
 
     if args.summary:
         print
-        print "- no SSL:         " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
-        print "! VULNERABLE:     " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
-        print "+ not vulnerable: " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
+	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
+        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
+        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
 
 
 if __name__ == '__main__':
