@@ -1,0 +1,6 @@
+Testing www.google.com...  port 443: not vulnerable; port 993: no SSL; port 995: no SSL; 
+Testing imap.gmail.com...  port 443: no SSL; port 993: not vulnerable; port 995: not vulnerable; 
+
+- no SSL:         3 (port 443: 1; port 993: 1; port 995: 1)
+! VULNERABLE:     0 (port 443: 0; port 993: 0; port 995: 0)
++ not vulnerable: 3 (port 443: 1; port 993: 1; port 995: 1)
