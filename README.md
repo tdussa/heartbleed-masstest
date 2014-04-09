@@ -23,3 +23,26 @@ And multiple hostlists can be specified:
 Concise mode is now implemented.  Adding the right grep statement to the
 pipeline highlights found vulnerabilities:
 * echo www.google.com | ./ssltest.py --ports "443, 993, 995" --concise | egrep --color '[[:digit:]]+!|'
+
+IPv6 support has been added.  IPv6 addresses are used if available.
+IPv4 and IPv6 scanning can be turned on or off with --ipv4, --ipv6,
+--no-ipv4, --no-ipv6.  The default is on for both.
+
+A port to be scanned can now also be appended to a given hostname directly.
+Specifying a port in this way disregards the usual portlist for this one
+host.  Example:
+* echo www.google.com:443 | ./ssltest.py --ports "993, 995"
+This will scan www.google.com on port 443, not on 993 or 995.
+
+Timestamping has been added.  This provides the ability to prepend a
+timestamp to every scan result line to make it clear when that particular
+scan was done.  Timestamping can be activated with the --timestamp option.
+This option takes the time format string as an argument (Python time format
+string notation); if the argument is omitted, ISO 8601 date format is used
+by default.
+
+The final summary of scan results can be suppressed by giving the
+--no-summary option.
+
+Many options have been given shortcuts now (-t for --timestamp, -c for
+--concise, -4 for --ipv4, -6 for --ipv6, to name some).
