@@ -18,10 +18,11 @@ from argparse import ArgumentParser
 
 # Parse args
 parser = ArgumentParser()
-parser.add_argument("-c", "--concise",   dest="concise",   default=None,                 action="store_true", help="make output concise")
-parser.add_argument("-t", "--timestamp", dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",           help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
-parser.add_argument("-p", "--ports",     dest="ports",     action="append",              nargs=1,             help="list of ports to be scanned (default: 443)")
-parser.add_argument("hostlist",                      default=["-"],                nargs="*",           help="list(s) of hosts to be scanned (default: stdin)")
+parser.add_argument("-c", "--concise",    dest="concise",   default=None,                 action="store_true",  help="make output concise")
+parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
+parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
+parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
+parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
 tmplist = []
 if not args.ports:
@@ -205,10 +206,11 @@ def main():
                 scan_host(line.strip())
             file.close()
 
-    print
-    print "- no SSL:         " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
-    print "! VULNERABLE:     " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
-    print "+ not vulnerable: " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
+    if args.summary:
+        print
+        print "- no SSL:         " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
+        print "! VULNERABLE:     " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
+        print "+ not vulnerable: " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
 
 
 if __name__ == '__main__':
