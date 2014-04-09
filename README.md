@@ -46,3 +46,5 @@ The final summary of scan results can be suppressed by giving the
 
 Many options have been given shortcuts now (-t for --timestamp, -c for
 --concise, -4 for --ipv4, -6 for --ipv6, to name some).
+
+The output now also includes the exact IP address used for each host.

@@ -7,3 +7,5 @@ TODO List
 ** IMAP
 ** POP3
 ** ?
+
+* Add support for DNS round robin hosts
