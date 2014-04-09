@@ -32,6 +32,7 @@ A port to be scanned can now also be appended to a given hostname directly.
 Specifying a port in this way disregards the usual portlist for this one
 host.  Example:
 * echo www.google.com:443 | ./ssltest.py --ports "993, 995"
+
 This will scan www.google.com on port 443, not on 993 or 995.
 
 Timestamping has been added.  This provides the ability to prepend a
