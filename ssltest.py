@@ -19,6 +19,10 @@ from argparse import ArgumentParser
 # Parse args
 parser = ArgumentParser()
 parser.add_argument("-c", "--concise",    dest="concise",   default=None,                 action="store_true",  help="make output concise")
+parser.add_argument("-4", "--ipv4",       dest="ipv4",                                    action="store_true",  help="turn on IPv4 scans (default)")
+parser.add_argument("-6", "--ipv6",       dest="ipv6",                                    action="store_true",  help="turn on IPv6 scans (default)")
+parser.add_argument(      "--no-ipv4",    dest="ipv4",                                    action="store_false", help="turn off IPv4 scans")
+parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
@@ -37,7 +41,22 @@ counter_vuln    = dict(((port, 0) for port in portlist))
 
 portlist = sorted(counter_nossl.keys())
 
-#options = OptionParser(usage='%prog file portlist', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file and port list to be scanned')
+
+def get_ipv4_address(host):
+    try:
+        address = socket.getaddrinfo(host, None, socket.AF_INET, 0, socket.SOL_TCP)
+    except socket.error:  # not a valid address
+        return False
+    return address[0][4][0]
+
+
+def get_ipv6_address(host):
+    try:
+        address = socket.getaddrinfo(host, None, socket.AF_INET6, 0, socket.SOL_TCP)
+    except socket.error:  # not a valid address
+        return False
+    return address[0][4][0]
+
 
 def h2bin(x):
     return x.replace(' ', '').replace('\n', '').decode('hex')
@@ -134,8 +153,8 @@ def hit_hb(s):
             return False
 
 
-def is_vulnerable(domain, port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def is_vulnerable(domain, port, protocol):
+    s = socket.socket(protocol, socket.SOCK_STREAM)
     s.settimeout(2)
     #print 'Connecting...'
     #sys.stdout.flush()
@@ -163,7 +182,7 @@ def is_vulnerable(domain, port):
     return hit_hb(s)
 
 
-def scan_host(domain):
+def scan_address(domain, address, protocol, portlist):
     if args.timestamp:
         print time.strftime(args.timestamp, time.gmtime()),
     if not args.concise:
@@ -173,7 +192,7 @@ def scan_host(domain):
 
     for port in portlist:
         sys.stdout.flush();
-        result = is_vulnerable(domain, port);
+        result = is_vulnerable(domain, port, socket.AF_INET);
         if result is None:
             if not args.concise:
                 print "port " + str(port) + ": no SSL;",
@@ -193,6 +212,13 @@ def scan_host(domain):
                 print str(port) + "+",
             counter_notvuln[port] += 1;
     print ""
+
+
+def scan_host(domain):
+    if args.ipv4:
+        
+
+    if args.ipv6:
 
 
 def main():
