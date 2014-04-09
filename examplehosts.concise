@@ -1,6 +1,8 @@
-www.google.com 443+ 993- 995- 
-imap.gmail.com 443- 993+ 995+ 
+www.google.com (173.194.70.106) 443+ 993- 995- 
+www.google.com (2a00:1450:4001:c02::68) 443+ 993- 995- 
+imap.gmail.com (173.194.70.108) 443- 993+ 995+ 
+imap.gmail.com (2a00:1450:4001:c02::6d) 443- 993+ 995+ 
 
-- no SSL:         3 (port 443: 1; port 993: 1; port 995: 1)
+- no SSL:         6 (port 443: 2; port 993: 2; port 995: 2)
 ! VULNERABLE:     0 (port 443: 0; port 993: 0; port 995: 0)
-+ not vulnerable: 3 (port 443: 1; port 993: 1; port 995: 1)
++ not vulnerable: 6 (port 443: 2; port 993: 2; port 995: 2)

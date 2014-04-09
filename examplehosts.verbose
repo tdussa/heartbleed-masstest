@@ -1,6 +1,8 @@
-Testing www.google.com...  port 443: not vulnerable; port 993: no SSL; port 995: no SSL; 
-Testing imap.gmail.com...  port 443: no SSL; port 993: not vulnerable; port 995: not vulnerable; 
+Testing www.google.com (173.194.70.106)...  port 443: not vulnerable; port 993: no SSL/unreachable; port 995: no SSL/unreachable; 
+Testing www.google.com (2a00:1450:4001:c02::68)...  port 443: not vulnerable; port 993: no SSL/unreachable; port 995: no SSL/unreachable; 
+Testing imap.gmail.com (173.194.70.108)...  port 443: no SSL/unreachable; port 993: not vulnerable; port 995: not vulnerable; 
+Testing imap.gmail.com (2a00:1450:4001:c02::6d)...  port 443: no SSL/unreachable; port 993: not vulnerable; port 995: not vulnerable; 
 
-- no SSL:         3 (port 443: 1; port 993: 1; port 995: 1)
-! VULNERABLE:     0 (port 443: 0; port 993: 0; port 995: 0)
-+ not vulnerable: 3 (port 443: 1; port 993: 1; port 995: 1)
+- no SSL/unreachable: 6 (port 443: 2; port 993: 2; port 995: 2)
+! VULNERABLE:         0 (port 443: 0; port 993: 0; port 995: 0)
++ not vulnerable:     6 (port 443: 2; port 993: 2; port 995: 2)
