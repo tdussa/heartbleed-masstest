@@ -18,9 +18,9 @@ from argparse import ArgumentParser
 
 # Parse args
 parser = ArgumentParser()
-parser.add_argument("--concise",   dest="concise",   default=None,                 action="store_true", help="make output concise")
-parser.add_argument("--timestamp", dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",           help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
-parser.add_argument("--ports",     dest="ports",     action="append",              nargs=1,             help="list of ports to be scanned (default: 443)")
+parser.add_argument("-c", "--concise",   dest="concise",   default=None,                 action="store_true", help="make output concise")
+parser.add_argument("-t", "--timestamp", dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",           help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
+parser.add_argument("-p", "--ports",     dest="ports",     action="append",              nargs=1,             help="list of ports to be scanned (default: 443)")
 parser.add_argument("hostlist",                      default=["-"],                nargs="*",           help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
 tmplist = []
