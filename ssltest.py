@@ -14,13 +14,14 @@ import socket
 import time
 import select
 import re
+from collections import defaultdict
 from argparse import ArgumentParser
 
 # Parse args
 parser = ArgumentParser()
 parser.add_argument("-c", "--concise",    dest="concise",   default=None,                 action="store_true",  help="make output concise")
-parser.add_argument("-4", "--ipv4",       dest="ipv4",                                    action="store_true",  help="turn on IPv4 scans (default)")
-parser.add_argument("-6", "--ipv6",       dest="ipv6",                                    action="store_true",  help="turn on IPv6 scans (default)")
+parser.add_argument("-4", "--ipv4",       dest="ipv4",      default=True,                 action="store_true",  help="turn on IPv4 scans (default)")
+parser.add_argument("-6", "--ipv6",       dest="ipv6",      default=True,                 action="store_true",  help="turn on IPv6 scans (default)")
 parser.add_argument(      "--no-ipv4",    dest="ipv4",                                    action="store_false", help="turn off IPv4 scans")
 parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
@@ -33,13 +34,22 @@ if not args.ports:
     args.ports = [["443"]]
 for port in args.ports:
     tmplist.extend(port[0].replace(",", " ").replace(";", " ").split())
-portlist = [int(i) for i in tmplist];
+portlist = list(set([int(i) for i in tmplist]))
+portlist.sort()
 
-counter_nossl   = dict(((port, 0) for port in portlist))
-counter_notvuln = dict(((port, 0) for port in portlist))
-counter_vuln    = dict(((port, 0) for port in portlist))
 
-portlist = sorted(counter_nossl.keys())
+counter_nossl   = defaultdict(int)
+counter_notvuln = defaultdict(int)
+counter_vuln    = defaultdict(int)
+
+
+# Set up REs to detect ports on IPv4 and IPv6 addresses
+ipv4re = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
+ipv6re = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
+
+
+# Define nice xstr function that converts None to ""
+xstr = lambda s: s or ""
 
 
 def get_ipv4_address(host):
@@ -186,13 +196,13 @@ def scan_address(domain, address, protocol, portlist):
     if args.timestamp:
         print time.strftime(args.timestamp, time.gmtime()),
     if not args.concise:
-        print "Testing " + domain + "... ",
+        print "Testing " + domain + " (" + address + ")... ",
     else:
-        print domain,
+        print domain + " (" + address + ")",
 
     for port in portlist:
         sys.stdout.flush();
-        result = is_vulnerable(domain, port, socket.AF_INET);
+        result = is_vulnerable(address, port, protocol);
         if result is None:
             if not args.concise:
                 print "port " + str(port) + ": no SSL;",
@@ -216,9 +226,26 @@ def scan_address(domain, address, protocol, portlist):
 
 def scan_host(domain):
     if args.ipv4:
-        
+        match = ipv4re.match(domain)
+        if match:
+            hostname = xstr(match.group("host"))
+            address = get_ipv4_address(hostname)
+            if address:
+                if match.group("port"):
+                    scan_address(hostname, address, socket.AF_INET, [int(match.group("port"))])
+                else:
+                    scan_address(hostname, address, socket.AF_INET, portlist)
 
     if args.ipv6:
+        match = ipv6re.match(domain)
+        if match:
+            hostname = xstr(match.group("bracketedhost")) + xstr(match.group("host"))
+            address = get_ipv6_address(hostname)
+            if address:
+                if match.group("port"):
+                    scan_address(hostname, address, socket.AF_INET6, [int(match.group("port"))])
+                else:
+                    scan_address(hostname, address, socket.AF_INET6, portlist)
 
 
 def main():
