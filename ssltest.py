@@ -18,9 +18,10 @@ from argparse import ArgumentParser
 
 # Parse args
 parser = ArgumentParser()
-parser.add_argument("--concise", dest="concise", default=None,    action="store_true", help="make output concise")
-parser.add_argument("--ports",   dest="ports",   action="append", nargs=1,             help="list of ports to be scanned (default: 443)")
-parser.add_argument("hostlist",                  default=["-"],   nargs="*",           help="list(s) of hosts to be scanned (default: stdin)")
+parser.add_argument("--concise",   dest="concise",   default=None,                 action="store_true", help="make output concise")
+parser.add_argument("--timestamp", dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",           help="add timestamps to output; optionally takes format string (default: %Y-%m-%dT%H:%M:%S%z:)")
+parser.add_argument("--ports",     dest="ports",     action="append",              nargs=1,             help="list of ports to be scanned (default: 443)")
+parser.add_argument("hostlist",                      default=["-"],                nargs="*",           help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
 tmplist = []
 if not args.ports:
@@ -34,7 +35,6 @@ counter_notvuln = dict(((port, 0) for port in portlist))
 counter_vuln    = dict(((port, 0) for port in portlist))
 
 portlist = sorted(counter_nossl.keys())
-
 
 #options = OptionParser(usage='%prog file portlist', description='Test for SSL heartbeat vulnerability (CVE-2014-0160) on multiple domains, takes in Alexa top X CSV file and port list to be scanned')
 
@@ -163,6 +163,8 @@ def is_vulnerable(domain, port):
 
 
 def scan_host(domain):
+    if args.timestamp:
+        print time.strftime(args.timestamp, time.gmtime()),
     if not args.concise:
         print "Testing " + domain + "... ",
     else:
