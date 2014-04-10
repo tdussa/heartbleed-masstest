@@ -1,9 +1,18 @@
 heartbleed-masstest
 ===================
 
-This fork of heartbleed-masstest removes the rate limiting capability of the original,
-but adds the possibility to specify the port(s) to be scanned for each host.
-See EXAMPLES for examples (doh). ;-)
+BEWARE!  The current version of the heardbleed test MAY RETURN FALSE NO-SSL
+RESULTS.  Under certain circumstances, the test may report that a service is not
+reachable via SSL even if it actually is.  AS FAR AS WE KNOW, THE TEST IS
+ACCURATE IN THE RESPECT THAT IF IT REPORTS A SERVICE AS NOT VULNERABLE, IT
+REALLY IS NOT VULNERABLE!  In other words, if the test says you are good, then
+you should be good; if it says you are vulnerable, you should be vulnerable, but
+if it says it couldn't detect SSL, that doesn't mean you are not vulnerable.
+We're working on it.
+
+This fork of heartbleed-masstest removes the rate limiting capability of the
+original, but adds the possibility to specify the port(s) to be scanned for each
+host.  See EXAMPLES for examples (doh). ;-)
 
 The command line syntax has changed a bit; ports are now specified by a
 named argument (which is optional, defaulting to 443)
