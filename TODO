@@ -11,3 +11,7 @@ TODO List
 * Add support for DNS round robin hosts
 
 * Add support for UDP
+
+* Do a real-life SSL handshake
+
+* ... with support for client certs
