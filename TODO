@@ -15,3 +15,5 @@ TODO List
 * Do a real-life SSL handshake
 
 * ... with support for client certs
+
+* Make output clearer (differentiate different "non-reachable" cases)
