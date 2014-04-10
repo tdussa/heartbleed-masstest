@@ -26,6 +26,8 @@ parser.add_argument(      "--no-ipv4",    dest="ipv4",                          
 parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: %%Y-%%m-%%dT%%H:%%M:%%S%%z:)")
+parser.add_argument("--starttls",   dest="starttls",  default=None,                 action="store",       choices = ['smtp'],
+                    help="Insert proper protocol stanzas to initiate STARTTLS")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
@@ -162,6 +164,23 @@ def hit_hb(s):
             #print 'Server returned error, likely not vulnerable'
             return False
 
+def do_starttls(s):
+    if args.starttls == "smtp":
+        # receive greeting
+        recvall(s, 1024)
+        # send EHLO
+        s.send("EHLO heartbleed-scanner.example.com\r\n")
+        # receive capabilities
+        cap = s.recv(1024)
+        print cap
+        if 'STARTTLS' in cap:
+            # start STARTTLS
+            s.send("STARTTLS\r\n")
+            ack = s.recv(1024)
+            if "220" in ack:
+                return True
+    return False
+
 
 def is_vulnerable(domain, port, protocol):
     s = socket.socket(protocol, socket.SOCK_STREAM)
@@ -174,6 +193,8 @@ def is_vulnerable(domain, port, protocol):
         return None
     #print 'Sending Client Hello...'
     #sys.stdout.flush()
+    if args.starttls:
+        do_starttls(s)
     s.send(hello)
     #print 'Waiting for Server Hello...'
     #sys.stdout.flush()
