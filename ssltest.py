@@ -282,9 +282,9 @@ def main():
 
     if args.summary:
         print
-	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
-        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
-        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
+	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in sorted(counter_nossl.keys())]) + ")"
+        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in sorted(counter_vuln.keys())]) + ")"
+        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in sorted(counter_notvuln.keys())]) + ")"
 
 
 if __name__ == '__main__':
