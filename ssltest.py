@@ -129,27 +129,38 @@ def hexdump(s):
         #print '  %04x: %-48s %s' % (b, hxdat, pdat)
     #print
 
+recv_buffer = ''
+
 def recvall(s, length, timeout=5):
+    global recv_buffer
     endtime = time.time() + timeout
     rdata = ''
     remain = length
     while remain > 0:
-        rtime = endtime - time.time() 
+        if len(recv_buffer)>0:
+            d = recv_buffer[:remain]
+            remain -= len(d)
+            rdata += d
+            recv_buffer = recv_buffer[len(d):]
+        if remain==0:
+            return rdata
+        rtime = endtime - time.time()
         if rtime < 0:
-            return None
-        r, w, e = select.select([s], [], [], 5)
-        if s in r:
-            try:
-                data = s.recv(remain)
-            except Exception, e:
+            if len(rdata)>0:
+                return rdata
+            else:
                 return None
+        r, w, e = select.select([s], [], [], 1)
+        if s in r:
+            data = s.recv(remain)
             # EOF?
             if not data:
-                return None
-            rdata += data
-            remain -= len(data)
+                if len(rdata)>0:
+                    return rdata
+                else:
+                    return None
+            recv_buffer += data
     return rdata
-        
 
 def recvmsg(s):
     hdr = recvall(s, 5)
