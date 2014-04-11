@@ -23,9 +23,10 @@ starttls_modes = ["smtp", "pop3", "imap", "ldap", "xmpp"]
 
 
 # Set up REs to detect ports on IPv4 and IPv6 addresses as well as STARTTLS modes
-ipv4re     = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
-ipv6re     = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
-starttlsre = re.compile("^(?P<port>\d+)/(?P<mode>(" + ")|(".join(starttls_modes) + "))$", re.I)
+portrangere = re.compile("^(?P<start>[\d+]*)(-(?P<end>[\d+]*))?$")
+ipv4re      = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
+ipv6re      = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
+starttlsre  = re.compile("^(?P<port>\d+)/(?P<mode>(" + ")|(".join(starttls_modes) + "))$", re.I)
 
 
 # Set up dicts to store some counters and config flags
@@ -57,6 +58,13 @@ if not args.ports:
     args.ports = [["443"]]
 for port in args.ports:
     tmplist.extend(port[0].replace(",", " ").replace(";", " ").split())
+for port in tmplist:
+    match = portrangere.match(str(port))
+    if not match:
+        sys.exit("ERROR: Invalid port specification: " + port)
+    if match.group("end"):
+        tmplist.remove(port)
+        tmplist.extend(range(int(match.group("start")), int(match.group("end")) + 1))
 portlist = list(set([int(i) for i in tmplist]))
 portlist.sort()
 
