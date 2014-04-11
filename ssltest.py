@@ -375,6 +375,8 @@ def recv_sslrecord(s):
     return typ, ver, pay, server_hello_done
 
 def is_vulnerable(domain, port, protocol):
+    global recv_buffer
+    recv_buffer = ''
     s = socket.socket(protocol, socket.SOCK_STREAM)
     s.settimeout(2)
     #print 'Connecting...'
