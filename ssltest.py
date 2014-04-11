@@ -17,6 +17,24 @@ import re
 from collections import defaultdict
 from argparse import ArgumentParser
 
+
+# Recognized STARTTLS modes
+starttls_modes = ["smtp", "pop3", "imap", "ldap", "xmpp"]
+
+
+# Set up REs to detect ports on IPv4 and IPv6 addresses as well as STARTTLS modes
+ipv4re     = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
+ipv6re     = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
+starttlsre = re.compile("^(?P<port>\d+)/(?P<mode>(" + ")|(".join(starttls_modes) + "))$", re.I)
+
+
+# Set up dicts to store some counters and config flags
+counter_nossl   = defaultdict(int)
+counter_notvuln = defaultdict(int)
+counter_vuln    = defaultdict(int)
+starttls_modes  = defaultdict(str)
+
+
 # Parse args
 parser = ArgumentParser()
 parser.add_argument("-c", "--concise",    dest="concise",   default=None,                 action="store_true",  help="make output concise")
@@ -25,13 +43,14 @@ parser.add_argument("-6", "--ipv6",       dest="ipv6",      default=True,       
 parser.add_argument(      "--no-ipv4",    dest="ipv4",                                    action="store_false", help="turn off IPv4 scans")
 parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
-parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: %%Y-%%m-%%dT%%H:%%M:%%S%%z:)")
-parser.add_argument("--starttls",   dest="starttls",  default=None,                 action="store",       choices = ['smtp', 'pop3', 'imap',
-                                                                                                                     'xmpp'],
-                    help="Insert proper protocol stanzas to initiate STARTTLS")
+parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: '%%Y-%%m-%%dT%%H:%%M:%%S%%z:')")
+parser.add_argument(      "--starttls",   dest="starttls",  const="25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp", nargs="?", help="insert proper protocol stanzas to initiate STARTTLS (default: '25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp')")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
+
+
+# Parse port list specification
 tmplist = []
 if not args.ports:
     args.ports = [["443"]]
@@ -41,14 +60,13 @@ portlist = list(set([int(i) for i in tmplist]))
 portlist.sort()
 
 
-counter_nossl   = defaultdict(int)
-counter_notvuln = defaultdict(int)
-counter_vuln    = defaultdict(int)
-
-
-# Set up REs to detect ports on IPv4 and IPv6 addresses
-ipv4re = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
-ipv6re = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
+# Parse STARTTLS mode specification
+tmplist = args.starttls.replace(",", " ").replace(";", " ").split()
+for starttls in tmplist:
+    match = starttlsre.match(starttls)
+    if not match:
+        sys.exit("ERROR: Invalid STARTTLS specification: " + starttls)
+    starttls_modes[int(match.group("port"))] = match.group("mode").lower()
 
 
 # Define nice xstr function that converts None to ""
@@ -170,8 +188,9 @@ def hit_hb(s):
             #print 'Server returned error, likely not vulnerable'
             return False
 
-def do_starttls(s):
-    if args.starttls == "smtp":
+
+def do_starttls(s, mode):
+    if mode == "smtp":
         # receive greeting
         recvall(s, 1024)
         # send EHLO
@@ -185,7 +204,7 @@ def do_starttls(s):
             ack = s.recv(1024)
             if "220" in ack:
                 return True
-#    elif args.starttls == "imap":
+#    elif mode == "imap":
 #        # receive greeting
 #        s.recv(1024)
 #        # start STARTTLS
@@ -195,7 +214,7 @@ def do_starttls(s):
 #            return True
 #        else:
 #            return False
-#    elif args.starttls == "pop3":
+#    elif mode == "pop3":
 #        # receive greeting
 #        s.recv(1024)
 #        # STARTTLS 
@@ -248,8 +267,8 @@ def is_vulnerable(domain, port, protocol):
         return None
     #print 'Sending Client Hello...'
     #sys.stdout.flush()
-    if args.starttls:
-        do_starttls(s)
+    if starttls_modes[port]:
+        do_starttls(s, starttls_modes[port])
     s.send(hello)
     #print 'Waiting for Server Hello...'
     #sys.stdout.flush()
@@ -338,9 +357,9 @@ def main():
 
     if args.summary:
         print
-	print "- no SSL/unreachable: " + str(sum(counter_nossl.values()))   + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port])   for port in portlist]) + ")"
-        print "! VULNERABLE:         " + str(sum(counter_vuln.values()))    + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port])    for port in portlist]) + ")"
-        print "+ not vulnerable:     " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in portlist]) + ")"
+        print "- no SSL/unreachable: " + str(sum(counter_nossl.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port]) for port in sorted(counter_nossl.keys())]) + ")"
+        print "! VULNERABLE: " + str(sum(counter_vuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port]) for port in sorted(counter_vuln.keys())]) + ")"
+        print "+ not vulnerable: " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in sorted(counter_notvuln.keys())]) + ")"
 
 
 if __name__ == '__main__':
