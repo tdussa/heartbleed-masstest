@@ -162,20 +162,6 @@ def recvall(s, length, timeout=5):
             recv_buffer += data
     return rdata
 
-def recvmsg(s):
-    hdr = recvall(s, 5)
-    if hdr is None:
-        #print 'Unexpected EOF receiving record header - server closed connection'
-        return None, None, None
-    typ, ver, ln = struct.unpack('>BHH', hdr)
-    pay = recvall(s, ln, 10)
-    if pay is None:
-        #print 'Unexpected EOF receiving record payload - server closed connection'
-        return None, None, None
-    #print ' ... received message: type = %d, ver = %04x, length = %d' % (typ, ver, len(pay))
-    return typ, ver, pay
-
-
 def hit_hb(s):
     s.send(hb)
     while True:
