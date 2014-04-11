@@ -174,7 +174,7 @@ def hit_hb(s):
 
         if typ == 24:
             #print 'Received heartbeat response:'
-            hexdump(pay)
+            #hexdump(pay)
             if len(pay) > 3:
                 #print 'WARNING: server returned more data than it should - server is vulnerable!'
                 return True
@@ -184,7 +184,7 @@ def hit_hb(s):
 
         if typ == 21:
             #print 'Received alert:'
-            hexdump(pay)
+            #hexdump(pay)
             #print 'Server returned error, likely not vulnerable'
             return False
 
@@ -197,7 +197,7 @@ def do_starttls(s, mode):
         s.send("EHLO heartbleed-scanner.example.com\r\n")
         # receive capabilities
         cap = s.recv(1024)
-        print cap
+        #print cap
         if 'STARTTLS' in cap:
             # start STARTTLS
             s.send("STARTTLS\r\n")
@@ -230,12 +230,13 @@ def parse_handshake(buf):
     skip = 0
     while remaining > 0:
         if remaining < 4:
-            print 'Length mismatch; unable to parse SSL handshake'
+            #print 'Length mismatch; unable to parse SSL handshake'
+            return False
         typ = ord(buf[skip])
         highbyte, msglen = struct.unpack_from('>BH', buf, skip + 1)
         msglen += highbyte * 0x10000
         if typ == 14:
-            print 'server hello done'
+            #print 'server hello done'
             return True
         remaining -= (msglen + 4)
         skip += (msglen + 4)
@@ -248,7 +249,7 @@ def recv_sslrecord(s):
     typ, ver, ln = struct.unpack('>BHH', hdr)
     pay = recvall(s, ln, 10)
     if pay is None:
-        print 'No payload received; server closed connection'
+        #print 'No payload received; server closed connection'
         return None, None, None, None
     if typ == 22:
         server_hello_done = parse_handshake(pay)
