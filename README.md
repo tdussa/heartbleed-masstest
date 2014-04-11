@@ -1,14 +1,8 @@
 heartbleed-masstest
 ===================
 
-BEWARE!  The current version of the heardbleed test MAY RETURN FALSE NO-SSL
-RESULTS.  Under certain circumstances, the test may report that a service is not
-reachable via SSL even if it actually is.  AS FAR AS WE KNOW, THE TEST IS
-ACCURATE IN THE RESPECT THAT IF IT REPORTS A SERVICE AS NOT VULNERABLE, IT
-REALLY IS NOT VULNERABLE!  In other words, if the test says you are good, then
-you should be good; if it says you are vulnerable, you should be vulnerable, but
-if it says it couldn't detect SSL, that doesn't mean you are not vulnerable.
-We're working on it.
+The current version has a much more robust SSL handshake, thanks to Daniel
+Roethlisberger.
 
 This fork of heartbleed-masstest removes the rate limiting capability of the
 original, but adds the possibility to specify the port(s) to be scanned for each
@@ -58,3 +52,8 @@ Many options have been given shortcuts now (-t for --timestamp, -c for
 --concise, -4 for --ipv4, -6 for --ipv6, to name some).
 
 The output now also includes the exact IP address used for each host.
+
+The --hosts (-H) switch has been added; this makes the script interpret
+command-line arguments directly as hosts, not as files with lists of hosts, so
+this scans www.google.com directly:
+* ./ssltest.py --hosts www.google.com

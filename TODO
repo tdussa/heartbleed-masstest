@@ -17,3 +17,5 @@ TODO List
 * ... with support for client certs
 
 * Make output clearer (differentiate different "non-reachable" cases)
+
+* Print a warning if hosts are completely unreachable
