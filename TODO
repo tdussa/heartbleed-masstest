@@ -2,7 +2,7 @@ TODO List
 =========
 
 * Add support for STARTTLS protocols
-** SMTP
+** SMTP (a bit of troubleshooting necessary)
 ** LDAP
 ** IMAP
 ** POP3
