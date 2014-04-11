@@ -53,19 +53,21 @@ args = parser.parse_args()
 
 
 # Parse port list specification
+portlist = []
 tmplist = []
 if not args.ports:
     args.ports = [["443"]]
 for port in args.ports:
-    tmplist.extend(port[0].replace(",", " ").replace(";", " ").split())
-for port in tmplist:
+    portlist.extend(port[0].replace(",", " ").replace(";", " ").split())
+for port in portlist:
     match = portrangere.match(str(port))
     if not match:
         sys.exit("ERROR: Invalid port specification: " + port)
     if match.group("end"):
-        tmplist.remove(port)
         tmplist.extend(range(int(match.group("start")), int(match.group("end")) + 1))
-portlist = list(set([int(i) for i in tmplist]))
+    else:
+        tmplist.append(int(match.group("start")))
+portlist = list(set([i for i in tmplist]))
 portlist.sort()
 
 

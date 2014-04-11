@@ -57,3 +57,8 @@ The --hosts (-H) switch has been added; this makes the script interpret
 command-line arguments directly as hosts, not as files with lists of hosts, so
 this scans www.google.com directly:
 * ./ssltest.py --hosts www.google.com
+
+The --ports (-p) switch now also takes ranges of ports of the form
+"<START>-<END>".  This works only on the command line.  This commands scans
+ports 1-100 and 200-300:
+* ./ssltest.py --ports "1-100 200-300" -H www.google.com
