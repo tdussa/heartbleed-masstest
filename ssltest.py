@@ -47,10 +47,10 @@ parser.add_argument(      "--no-summary", dest="summary",   default=True,       
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: '%%Y-%%m-%%dT%%H:%%M:%%S%%z:')")
 parser.add_argument(      "--starttls",   dest="starttls",  const="25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp", default ="", nargs="?", help="insert proper protocol stanzas to initiate STARTTLS (default: '25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp')")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
+parser.add_argument("-l", "--length",     dest="length",    default=0x4000,               type=int,             help="heartbeat request length field")
 parser.add_argument("-H", "--hosts",      dest="hosts",     default=False,                action="store_true",  help="turn off hostlist processing, process host names directly instead")
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
-
 
 # Parse port list specification
 tmplist = []
@@ -393,7 +393,7 @@ def is_vulnerable(domain, port, protocol):
 
     #print 'Sending heartbeat request...'
     #sys.stdout.flush()
-    return hit_hb(s, create_hb_req(version, 0x4000))
+    return hit_hb(s, create_hb_req(version, args.length))
 
 
 def scan_address(domain, address, protocol, portlist):
