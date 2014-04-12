@@ -271,7 +271,14 @@ def recvall(s, length, timeout=5):
                 return None
         r, w, e = select.select([s], [], [], 1)
         if s in r:
-            data = s.recv(remain)
+	    try:
+                data = s.recv(remain)
+	    except Exception, e:  # Problem while receiving
+                if len(rdata) > 0:
+                    return rdata
+                else:
+                    return None
+
             # EOF?
             if not data:
                 if len(rdata)>0:
@@ -313,12 +320,12 @@ def do_starttls(s, mode):
         # send EHLO
         s.send("EHLO heartbleed-scanner.example.com\r\n")
         # receive capabilities
-        cap = s.recv(1024)
+        cap = recvall(s, 1024)
         #print cap
         if 'STARTTLS' in cap:
             # start STARTTLS
             s.send("STARTTLS\r\n")
-            ack = s.recv(1024)
+            ack = recvall(s, 1024)
             if "220" in ack:
                 return True
 #    elif mode == "imap":
