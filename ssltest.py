@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 
 
 # Recognized STARTTLS modes
-starttls_modes = ["smtp", "pop3", "imap", "ldap", "xmpp"]
+starttls_modes = ["ftp", "imap", "ldap", "pop3", "smtp", "xmpp"]
 
 
 # Set up REs to detect ports on IPv4 and IPv6 addresses as well as STARTTLS modes
