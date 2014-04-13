@@ -488,8 +488,14 @@ def main():
 
     if args.summary:
         print
+        if args.timestamp:
+            print time.strftime(args.timestamp, time.gmtime()),
         print "- no SSL/unreachable: " + str(sum(counter_nossl.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_nossl[port]) for port in sorted(counter_nossl.keys())]) + ")"
+        if args.timestamp:
+            print time.strftime(args.timestamp, time.gmtime()),
         print "! VULNERABLE: " + str(sum(counter_vuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_vuln[port]) for port in sorted(counter_vuln.keys())]) + ")"
+        if args.timestamp:
+            print time.strftime(args.timestamp, time.gmtime()),
         print "+ not vulnerable: " + str(sum(counter_notvuln.values())) + " (" + "; ".join(["port " + str(port) + ": " + str(counter_notvuln[port]) for port in sorted(counter_notvuln.keys())]) + ")"
 
 
