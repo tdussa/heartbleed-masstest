@@ -256,7 +256,7 @@ def hexdump(s):
 
 recv_buffer = ''
 
-def recvall(s, length, timeout=5):
+def recvall(s, length, timeout=int(args.timeout)):
     global recv_buffer
     endtime = time.time() + timeout
     rdata = ''
@@ -373,11 +373,11 @@ def parse_handshake(buf):
     return False
 
 def recv_sslrecord(s):
-    hdr = recvall(s, 5, 5)
+    hdr = recvall(s, 5)
     if hdr is None:
         return None, None, None, None
     typ, ver, ln = struct.unpack('>BHH', hdr)
-    pay = recvall(s, ln, 10)
+    pay = recvall(s, ln)
     if pay is None:
         #print 'No payload received; server closed connection'
         return None, None, None, None
