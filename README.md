@@ -59,6 +59,8 @@ this scans www.google.com directly:
 * ./ssltest.py --hosts www.google.com
 
 The --ports (-p) switch now also takes ranges of ports of the form
-"<START>-<END>".  This works only on the command line.  This commands scans
-ports 1-100 and 200-300:
+"<START>-<END>".  This commands scans ports 1-100 and 200-300:
 * ./ssltest.py --ports "1-100 200-300" -H www.google.com
+
+This command line scans ports 80-88 and 443-445:
+* ./ssltest.py --hosts "www.google.com:80-88,443-445"

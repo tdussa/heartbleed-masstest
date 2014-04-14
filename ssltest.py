@@ -25,8 +25,8 @@ starttls_modes = ["ftp", "imap", "ldap", "pop3", "smtp", "xmpp"]
 
 # Set up REs to detect ports on IPv4 and IPv6 addresses as well as STARTTLS modes
 portrangere = re.compile("^(?P<start>[\d+]*)(-(?P<end>[\d+]*))?$")
-ipv4re      = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+))?$")
-ipv6re      = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+))?$")
+ipv4re      = re.compile("^(?P<host>[^:]*?)(:(?P<port>\d+([ ,;-]+\d+)*))?$")
+ipv6re      = re.compile("^(([[](?P<bracketedhost>[\dA-Fa-f:]*?)[]])|(?P<host>[^:]*?))(:(?P<port>\d+([ ,;-]+\d+)*))?$")
 starttlsre  = re.compile("^(?P<port>\d+)/(?P<mode>(" + ")|(".join(starttls_modes) + "))$", re.I)
 
 
@@ -53,23 +53,28 @@ parser.add_argument("-H", "--hosts",      dest="hosts",     default=False,      
 parser.add_argument("hostlist",                             default=["-"],                nargs="*",            help="list(s) of hosts to be scanned (default: stdin)")
 args = parser.parse_args()
 
+
+# Function to encapsulate port list specification parsing
+def parse_portlist(inputlist):
+    finallist = []
+    tmplist = []
+    for port in inputlist:
+        tmplist.extend(port[0].replace(",", " ").replace(";", " ").split())
+    for port in tmplist:
+        match = portrangere.match(str(port))
+        if not match:
+            sys.exit("ERROR: Invalid port specification: " + port)
+        if match.group("end"):
+            finallist.extend(range(int(match.group("start")), int(match.group("end")) + 1))
+        else:
+            finallist.append(int(match.group("start")))
+    return sorted(list(set([i for i in finallist])))
+
+
 # Parse port list specification
-portlist = []
-tmplist = []
 if not args.ports:
     args.ports = [["443"]]
-for port in args.ports:
-    portlist.extend(port[0].replace(",", " ").replace(";", " ").split())
-for port in portlist:
-    match = portrangere.match(str(port))
-    if not match:
-        sys.exit("ERROR: Invalid port specification: " + port)
-    if match.group("end"):
-        tmplist.extend(range(int(match.group("start")), int(match.group("end")) + 1))
-    else:
-        tmplist.append(int(match.group("start")))
-portlist = list(set([i for i in tmplist]))
-portlist.sort()
+portlist = parse_portlist(args.ports)
 
 
 # Parse STARTTLS mode specification
@@ -455,7 +460,7 @@ def scan_host(domain):
             address = get_ipv4_address(hostname)
             if address:
                 if match.group("port"):
-                    scan_address(hostname, address, socket.AF_INET, [int(match.group("port"))])
+                    scan_address(hostname, address, socket.AF_INET, parse_portlist([[match.group("port")]]))
                 else:
                     scan_address(hostname, address, socket.AF_INET, portlist)
 
@@ -466,7 +471,7 @@ def scan_host(domain):
             address = get_ipv6_address(hostname)
             if address:
                 if match.group("port"):
-                    scan_address(hostname, address, socket.AF_INET6, [int(match.group("port"))])
+                    scan_address(hostname, address, socket.AF_INET6, parse_portlist([[match.group("port")]]))
                 else:
                     scan_address(hostname, address, socket.AF_INET6, portlist)
 
