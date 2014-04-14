@@ -46,6 +46,7 @@ parser.add_argument(      "--no-ipv4",    dest="ipv4",                          
 parser.add_argument(      "--no-ipv6",    dest="ipv6",                                    action="store_false", help="turn off IPv6 scans")
 parser.add_argument(      "--no-summary", dest="summary",   default=True,                 action="store_false", help="suppress scan summary")
 parser.add_argument("-t", "--timestamp",  dest="timestamp", const="%Y-%m-%dT%H:%M:%S%z:", nargs="?",            help="add timestamps to output; optionally takes format string (default: '%%Y-%%m-%%dT%%H:%%M:%%S%%z:')")
+parser.add_argument("-T", "--timeout",    dest="timeout",   default=5,                                          help="set the networking timeout (default: 5)")
 parser.add_argument(      "--starttls",   dest="starttls",  const="25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp", default ="", nargs="?", help="insert proper protocol stanzas to initiate STARTTLS (default: '25/smtp, 110/pop3, 143/imap, 389/ldap, 5222/xmpp, 5269/xmpp')")
 parser.add_argument("-p", "--ports",      dest="ports",     action="append",              nargs=1,              help="list of ports to be scanned (default: 443)")
 parser.add_argument("-l", "--length",     dest="length",    default=0x4000,               type=int,             help="heartbeat request length field")
@@ -390,7 +391,7 @@ def is_vulnerable(domain, port, protocol):
     global recv_buffer
     recv_buffer = ''
     s = socket.socket(protocol, socket.SOCK_STREAM)
-    s.settimeout(2)
+    s.settimeout(int(args.timeout))
     #print 'Connecting...'
     #sys.stdout.flush()
     try:
