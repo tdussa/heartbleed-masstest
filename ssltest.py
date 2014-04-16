@@ -113,7 +113,7 @@ def h2bin(x):
 
 hello_pre = h2bin('''
         16          # type
-        03 02       # version
+        03 03       # version
         02 f2       # len
         01          # type
         00 02 ee    # len
