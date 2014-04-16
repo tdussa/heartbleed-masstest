@@ -2,7 +2,10 @@ heartbleed-masstest
 ===================
 
 The current version has a much more robust SSL handshake, thanks to Daniel
-Roethlisberger.
+Roethlisberger.  The cipher list offered has been updated to include all
+currently-defined ciphers, so it is truly universal now (the list of
+currently-defined ciphers can be found at the IANA:
+  https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4).
 
 This fork of heartbleed-masstest removes the rate limiting capability of the
 original, but adds the possibility to specify the port(s) to be scanned for each
