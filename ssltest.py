@@ -108,7 +108,7 @@ def get_ipv6_address(host):
 
 
 def h2bin(x):
-    x = re.sub(r'#.*$', r'', x, flags=re.MULTILINE)
+    x = re.sub(r'(?m)#.*$', r'', x)
     return x.replace(' ', '').replace('\n', '').decode('hex')
 
 hello_pre = h2bin('''
